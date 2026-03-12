@@ -148,15 +148,3 @@ elif nav_mode == "Risk Intelligence":
             
             st.subheader("High-Priority System Flags")
             st.table(df[df['Status'] == "Critical Spike"][['ATM_ID', 'Date', 'Location_Type', 'Total_Withdrawals']].head(10))
-
-# --- FOOTER ---
-st.markdown("""
-<div style="background: rgba(0, 0, 0, 0.3); padding: 20px; border-radius: 15px; text-align: center; margin-top: 30px; border: 1px solid rgba(102, 126, 234, 0.2);">
-    <p style="color: #ffffff; margin: 0; font-size: 0.9em; font-weight: 500;">
-        📊 FinTrust Intelligence Suite | Secure Banking Data Operations
-    </p>
-    <p style="color: rgba(255, 255, 255, 0.5); margin: 5px 0 0 0; font-size: 0.8em;">
-        Engineered with Python, Scikit-Learn & High-Performance Visuals
-    </p>
-</div>
-""", unsafe_allow_html=True)
