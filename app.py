@@ -8,7 +8,6 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import IsolationForest
 import time
 
-# --- PAGE SETUP ---
 st.set_page_config(
     page_title="FinTrust | AI Analytics",
     page_icon="💠",
@@ -16,13 +15,11 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- ULTRA-PREMIUM CSS (Glassmorphism & Animations) ---
 def inject_premium_ui():
     st.markdown("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap');
         
-        /* Global Theme */
         .stApp {
             background-color: #0b0c10;
             background-image: radial-gradient(circle at 50% 0%, #1f2833 0%, #0b0c10 70%);
@@ -30,10 +27,8 @@ def inject_premium_ui():
             font-family: 'Inter', sans-serif;
         }
         
-        /* Typography */
         h1, h2, h3 { font-family: 'Space Grotesk', sans-serif; color: #ffffff; }
         
-        /* Glassmorphism Cards */
         .glass-card {
             background: rgba(31, 40, 51, 0.4);
             backdrop-filter: blur(12px);
@@ -50,7 +45,6 @@ def inject_premium_ui():
             transform: translateY(-2px);
         }
         
-        /* Header Banner */
         .hero-banner {
             background: linear-gradient(135deg, #0b0c10 0%, #1f2833 100%);
             border-left: 6px solid #45a29e;
@@ -63,7 +57,6 @@ def inject_premium_ui():
             overflow: hidden;
         }
         
-        /* Animated Glow */
         .hero-banner::after {
             content: '';
             position: absolute;
@@ -73,7 +66,6 @@ def inject_premium_ui():
         }
         @keyframes rotate { 100% { transform: rotate(360deg); } }
         
-        /* Custom Metrics */
         .kpi-title { font-size: 0.9rem; color: #45a29e; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;}
         .kpi-value { font-size: 2.5rem; font-weight: 700; color: #ffffff; font-family: 'Space Grotesk', sans-serif; }
         .kpi-value.neon { 
@@ -82,7 +74,6 @@ def inject_premium_ui():
             -webkit-text-fill-color: transparent; 
         }
 
-        /* Tabs Styling */
         .stTabs [data-baseweb="tab-list"] { gap: 10px; background-color: transparent; }
         .stTabs [data-baseweb="tab"] {
             background-color: rgba(31, 40, 51, 0.6);
@@ -101,7 +92,6 @@ def inject_premium_ui():
     </style>
     """, unsafe_allow_html=True)
 
-# --- DATA PIPELINE ---
 @st.cache_data(show_spinner=False)
 def load_data():
     try:
@@ -114,7 +104,6 @@ def load_data():
 inject_premium_ui()
 df, success = load_data()
 
-# --- SIDEBAR CONTROL HUB ---
 with st.sidebar:
     st.markdown("""
     <div style="text-align: center; margin-bottom: 30px;">
@@ -145,7 +134,6 @@ if not success:
     st.error("System Failure: 'atm_cash_management_dataset.csv' disconnected.")
     st.stop()
 
-# --- HERO BANNER ---
 st.markdown("""
 <div class="hero-banner">
     <div style="position: relative; z-index: 1;">
@@ -157,7 +145,6 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# --- REUSABLE PLOTLY THEME ---
 custom_template = go.layout.Template()
 custom_template.layout.plot_bgcolor = "rgba(0,0,0,0)"
 custom_template.layout.paper_bgcolor = "rgba(0,0,0,0)"
@@ -165,7 +152,6 @@ custom_template.layout.font.color = "#c5c6c7"
 custom_template.layout.xaxis.gridcolor = "rgba(102,252,241,0.1)"
 custom_template.layout.yaxis.gridcolor = "rgba(102,252,241,0.1)"
 
-# --- LAYER 1: GLOBAL OVERVIEW ---
 if nav_mode == "🌐 Global Overview":
     c1, c2, c3, c4 = st.columns(4)
     with c1:
@@ -179,11 +165,10 @@ if nav_mode == "🌐 Global Overview":
 
     st.markdown("### 🗄️ Secure Data Ledger")
     st.dataframe(
-        df.head(100).style.background_gradient(cmap='ocean_r', subset=['Total_Withdrawals', 'Total_Deposits']),
+        df.head(100),
         use_container_width=True, height=400
     )
 
-# --- LAYER 2: MARKET DYNAMICS ---
 elif nav_mode == "📈 Market Dynamics":
     if len(selected_metrics) < 2:
         st.warning("⚠️ Insufficient Data Vectors. Select at least 2 in the Neural Core.")
@@ -207,18 +192,16 @@ elif nav_mode == "📈 Market Dynamics":
             st.plotly_chart(fig_dist, use_container_width=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
-# --- LAYER 3: RISK & DIAGNOSTICS (AI ENGINE) ---
 elif nav_mode == "⚡ Risk & Diagnostics":
     if len(selected_metrics) < 2:
         st.error("⚠️ AI Diagnostic Engine requires at least 2 Data Streams.")
     else:
-        # Reactive AI Processing
         with st.spinner("Compiling Neural Models..."):
             X = StandardScaler().fit_transform(df[selected_metrics])
             df['Cluster'] = KMeans(n_clusters=k_clusters, n_init=10, random_state=42).fit_predict(X)
             df['Signal'] = IsolationForest(contamination=anomaly_threshold, random_state=42).fit_predict(X)
             df['Risk_Level'] = df['Signal'].map({1: "Nominal", -1: "Critical Spike"})
-            time.sleep(0.3) # Adds a slight processing feel for premium UX
+            time.sleep(0.3)
             st.toast("AI Models Recalibrated Successfully", icon="✅")
 
         t1, t2 = st.tabs(["🧩 High-Dimensional Clustering", "🚨 Anomaly Isolation"])
@@ -226,7 +209,6 @@ elif nav_mode == "⚡ Risk & Diagnostics":
         with t1:
             st.markdown('<div class="glass-card">', unsafe_allow_html=True)
             
-            # 3D Plot if 3+ metrics selected, else 2D
             if len(selected_metrics) >= 3:
                 
                 fig_cl = px.scatter_3d(df, x=selected_metrics[0], y=selected_metrics[1], z=selected_metrics[2],
@@ -252,13 +234,10 @@ elif nav_mode == "⚡ Risk & Diagnostics":
             st.plotly_chart(fig_anom, use_container_width=True)
             st.markdown('</div>', unsafe_allow_html=True)
             
-            # Urgent Action Table
             anomalies = df[df['Risk_Level'] == "Critical Spike"].sort_values('Total_Withdrawals', ascending=False)
             st.markdown(f"### ⚠️ Priority Action Queue ({len(anomalies)} Flags)")
-            st.dataframe(anomalies[['ATM_ID', 'Date', 'Location_Type'] + selected_metrics].style.applymap(
-                lambda x: 'color: #ff4444; font-weight: bold;', subset=['ATM_ID']), use_container_width=True)
+            st.dataframe(anomalies[['ATM_ID', 'Date', 'Location_Type'] + selected_metrics], use_container_width=True)
 
-# --- FOOTER ---
 st.markdown("""
 <div style="text-align: center; margin-top: 50px; padding-top: 20px; border-top: 1px solid rgba(102, 252, 241, 0.1);">
     <p style="color: #45a29e; font-size: 0.85rem; letter-spacing: 1px;">
