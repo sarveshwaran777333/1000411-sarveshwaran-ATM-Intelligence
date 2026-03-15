@@ -100,4 +100,4 @@ Class: XI
 
 Registration ID: 1000411
 
-Mentor: Syedali Beema
+Mentor: Aruljothi.M
