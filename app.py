@@ -332,7 +332,7 @@ elif nav_mode == "🔮 Predictive Forecasting":
         with st.spinner("🧠 FinTrust Neural Core (Gemini) is analyzing fleet telemetry..."):
             try:
                 genai.configure(api_key=gemini_key)
-                model = genai.GenerativeModel('gemini-1.5-flash')
+                model = genai.GenerativeModel('gemini-2.5-flash')
                 
                 # Prepare data context for Gemini to read
                 atm_summary = filtered_df.groupby('ATM_ID').agg(
