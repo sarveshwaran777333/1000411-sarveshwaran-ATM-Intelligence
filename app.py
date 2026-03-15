@@ -1,5 +1,5 @@
 import streamlit as st
-import streamlit.components.v1 as components  # Added for tooltip injection
+import streamlit.components.v1 as components
 import pandas as pd
 import numpy as np
 import plotly.express as px
@@ -9,6 +9,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import IsolationForest
 from sklearn.decomposition import PCA
 import time
+import google.generativeai as genai
 
 st.set_page_config(
     page_title="FinTrust | AI Analytics",
@@ -31,10 +32,7 @@ def inject_premium_ui():
                 color: #c5c6c7;
                 font-family: 'Inter', sans-serif;
             }
-            h1, h2, h3, h4, h5, h6 { 
-                font-family: 'Space Grotesk', sans-serif; 
-                color: #ffffff; 
-            }
+            h1, h2, h3, h4, h5, h6 { font-family: 'Space Grotesk', sans-serif; color: #ffffff; }
             
             .glass-card {
                 background: rgba(31, 40, 51, 0.4);
@@ -47,10 +45,7 @@ def inject_premium_ui():
                 box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
                 transition: transform 0.3s ease, border-color 0.3s ease;
             }
-            .glass-card:hover {
-                border-color: rgba(102, 252, 241, 0.3);
-                transform: translateY(-2px);
-            }
+            .glass-card:hover { border-color: rgba(102, 252, 241, 0.3); transform: translateY(-2px); }
             
             .hero-banner {
                 background: #0b0c10;
@@ -63,61 +58,41 @@ def inject_premium_ui():
                 box-shadow: 0 20px 50px rgba(0,0,0,0.5);
             }
             .hero-banner::before, .hero-banner::after {
-                content: '';
-                position: absolute;
-                top: -100%; left: -100%; width: 300%; height: 300%;
+                content: ''; position: absolute; top: -100%; left: -100%; width: 300%; height: 300%;
                 background: radial-gradient(circle, rgba(102,252,241,0.1) 0%, transparent 40%);
-                animation: rotate-mesh 20s linear infinite;
-                z-index: 0;
+                animation: rotate-mesh 20s linear infinite; z-index: 0;
             }
             .hero-banner::after {
                 background: radial-gradient(circle, rgba(69,162,158,0.1) 0%, transparent 40%);
-                animation: rotate-mesh 15s linear reverse infinite;
-                opacity: 0.5;
+                animation: rotate-mesh 15s linear reverse infinite; opacity: 0.5;
             }
-            @keyframes rotate-mesh {
-                from { transform: rotate(0deg); }
-                to { transform: rotate(360deg); }
-            }
+            @keyframes rotate-mesh { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
             .shimmer-text {
                 background: linear-gradient(90deg, #ffffff, #66fcf1, #ffffff);
-                background-size: 200% auto;
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-                animation: shine 5s linear infinite;
-                font-weight: 700;
+                background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+                animation: shine 5s linear infinite; font-weight: 700;
             }
-            @keyframes shine {
-                to { background-position: 200% center; }
-            }
+            @keyframes shine { to { background-position: 200% center; } }
             
             .kpi-title { font-size: 0.9rem; color: #45a29e; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
             .kpi-value { font-size: 2.5rem; font-weight: 700; color: #ffffff; font-family: 'Space Grotesk', sans-serif; }
             .kpi-value.neon { background: -webkit-linear-gradient(45deg, #66fcf1, #45a29e); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
             
-            /* --- TAB STYLING --- */
             .stTabs [data-baseweb="tab-list"] { gap: 10px; background-color: transparent; overflow: visible !important; }
             .stTabs [data-baseweb="tab"] {
-                background-color: rgba(31, 40, 51, 0.6);
-                border-radius: 8px 8px 0 0;
-                border: 1px solid rgba(102, 252, 241, 0.1);
-                border-bottom: none;
-                color: #c5c6c7 !important;
-                padding: 12px 24px;
-                font-family: 'Space Grotesk', sans-serif;
-                transition: all 0.3s ease;
-                position: relative;
-                overflow: visible !important;
+                background-color: rgba(31, 40, 51, 0.6); border-radius: 8px 8px 0 0;
+                border: 1px solid rgba(102, 252, 241, 0.1); border-bottom: none;
+                color: #c5c6c7 !important; padding: 12px 24px; font-family: 'Space Grotesk', sans-serif;
+                transition: all 0.3s ease; position: relative; overflow: visible !important;
             }
-            .stTabs [aria-selected="true"] {
-                background: linear-gradient(180deg, rgba(102, 252, 241, 0.1) 0%, rgba(31, 40, 51, 0) 100%);
-                border-top: 2px solid #66fcf1;
-                color: #ffffff !important;
-            }
+            .stTabs [aria-selected="true"] { background: linear-gradient(180deg, rgba(102, 252, 241, 0.1) 0%, rgba(31, 40, 51, 0) 100%); border-top: 2px solid #66fcf1; color: #ffffff !important; }
 
             .footer-text { color: #45a29e; font-size: 0.85rem; letter-spacing: 1px; }
             div[data-baseweb="select"] > div { background-color: rgba(31, 40, 51, 0.8); border-color: rgba(102, 252, 241, 0.3); color: white; }
+            
+            .allocation-box { padding: 15px; border-radius: 10px; background: rgba(0, 0, 0, 0.2); border-left: 4px solid #66fcf1; margin-top: 10px; }
+            .allocation-box.low { border-left: 4px solid #45a29e; }
         </style>
         """,
         unsafe_allow_html=True
@@ -138,6 +113,10 @@ def load_and_preprocess_data():
     except Exception:
         return pd.DataFrame(), False
 
+@st.cache_data(show_spinner=False)
+def convert_df(df):
+    return df.to_csv(index=False).encode('utf-8')
+
 def render_kpi_card(title, value, is_neon=False):
     neon_class = "neon" if is_neon else ""
     st.markdown(f'<div class="glass-card"><div class="kpi-title">{title}</div><div class="kpi-value {neon_class}">{value}</div></div>', unsafe_allow_html=True)
@@ -157,6 +136,9 @@ inject_premium_ui()
 df, success = load_and_preprocess_data()
 base_template = create_base_plotly_template()
 
+# Securely load the API Key from Streamlit Secrets
+gemini_key = st.secrets.get("GEMINI_API_KEY", None)
+
 with st.sidebar:
     st.markdown('<div style="text-align: center; margin-bottom: 30px;"><h1 class="shimmer-text" style="font-size: 2.2rem; margin:0;">💠 FinTrust</h1><p style="color: #45a29e; font-size: 0.9rem; margin:0; letter-spacing: 2px;">NEURAL CORE</p></div>', unsafe_allow_html=True)
     nav_mode = st.radio("OPERATING LAYER", ["🌐 Global Overview", "📈 Market Dynamics", "⚡ Risk & Diagnostics", "🔮 Predictive Forecasting"], label_visibility="collapsed")
@@ -173,6 +155,19 @@ with st.sidebar:
     if success:
         unique_locations = df['Location_Type'].unique().tolist()
         selected_locations = st.multiselect("Filter by Location Type", options=unique_locations, default=unique_locations, label_visibility="collapsed")
+
+    # API Key status indicator in sidebar
+    st.markdown("<hr style='border-color: rgba(102,252,241,0.2);'><p style='color: #45a29e; font-size:0.85rem; font-weight:600; margin-bottom:10px;'>🧠 AI INTEGRATION</p>", unsafe_allow_html=True)
+    if gemini_key:
+        st.success("Securely connected to Gemini AI.")
+    else:
+        st.warning("AI Core Offline: API Key missing in secrets.")
+
+    if success and selected_locations:
+        st.markdown("<hr style='border-color: rgba(102,252,241,0.2);'><p style='color: #45a29e; font-size:0.85rem; font-weight:600; margin-bottom:10px;'>DATA EXPORT</p>", unsafe_allow_html=True)
+        filtered_df = df[df['Location_Type'].isin(selected_locations)].copy()
+        csv_data = convert_df(filtered_df)
+        st.download_button(label="📥 Download Filtered Dataset", data=csv_data, file_name="fintrust_filtered_data.csv", mime="text/csv", use_container_width=True)
 
 if not success:
     st.error("System Failure: 'atm_cash_management_dataset.csv' disconnected. Please ensure the dataset is in the same directory.")
@@ -206,7 +201,6 @@ if nav_mode == "🌐 Global Overview":
 
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
     st.markdown("### 📈 Fleet Throughput Timeline")
-    
     ctrl_col1, ctrl_col2 = st.columns([1, 1])
     with ctrl_col1: timeline_metric = st.selectbox("Select Metric to Plot:", ['Total_Withdrawals', 'Total_Deposits', 'Previous_Day_Cash_Level'], index=0)
     with ctrl_col2: timeline_grouping = st.radio("Display Mode:", ['Aggregate Fleet View', 'Compare by Location'], horizontal=True)
@@ -222,7 +216,6 @@ if nav_mode == "🌐 Global Overview":
     fig_timeline.update_layout(template=base_template, margin=dict(t=10, b=10, l=10, r=10), height=350, hovermode="x unified")
     st.plotly_chart(fig_timeline, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
-    
     st.markdown("### 🗄️ Secure Data Ledger")
     st.dataframe(filtered_df.head(250), use_container_width=True, height=400)
 
@@ -256,8 +249,6 @@ elif nav_mode == "⚡ Risk & Diagnostics":
             scaler = StandardScaler()
             X_scaled = scaler.fit_transform(filtered_df[selected_metrics])
             kmeans_model = KMeans(n_clusters=k_clusters, n_init=10, random_state=42)
-            
-            # Predict clusters and explicitly cast to string for Plotly categorical legend
             filtered_df['Assigned_Cluster'] = kmeans_model.fit_predict(X_scaled)
             filtered_df['Cluster_Str'] = filtered_df['Assigned_Cluster'].astype(str)
             
@@ -276,11 +267,9 @@ elif nav_mode == "⚡ Risk & Diagnostics":
 
         tab_cluster, tab_anomaly = st.tabs(["🧩 High-Dimensional Clustering", "🚨 Anomaly Isolation"])
 
-        # ---> INJECT TOOLTIPS HERE USING STREAMLIT COMPONENTS <---
         components.html(
             """
             <script>
-            // Use setTimeout to ensure the DOM is fully loaded before attaching attributes
             setTimeout(function() {
                 const tabs = window.parent.document.querySelectorAll('[data-baseweb="tab"]');
                 if (tabs.length >= 2) {
@@ -289,8 +278,7 @@ elif nav_mode == "⚡ Risk & Diagnostics":
                 }
             }, 500);
             </script>
-            """,
-            height=0, width=0
+            """, height=0, width=0
         )
 
         with tab_cluster:
@@ -321,6 +309,62 @@ elif nav_mode == "⚡ Risk & Diagnostics":
             st.dataframe(critical_events[display_cols], use_container_width=True)
 
 elif nav_mode == "🔮 Predictive Forecasting":
+    
+    # --- GEMINI AI CASH ALLOCATION ENGINE ---
+    st.markdown("### 🤖 Generative AI Cash Allocation Strategy")
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    
+    if not gemini_key:
+        st.info("💡 **AI Core Offline:** Add `GEMINI_API_KEY` to your `.streamlit/secrets.toml` file to unlock real-time, AI-driven cash replenishment strategies.")
+        
+        # Fallback static logic if no API key is provided
+        atm_demand = filtered_df.groupby('ATM_ID')['Total_Withdrawals'].mean().sort_values(ascending=False)
+        col_more, col_less = st.columns(2)
+        with col_more:
+            st.markdown("<h5 style='color: #66fcf1; margin-bottom: 5px;'>🔼 HIGH PRIORITY (Load More)</h5>", unsafe_allow_html=True)
+            for atm, val in atm_demand.head(3).items():
+                st.markdown(f"<div class='allocation-box'><b>Node ID: {atm}</b><br><span style='font-size: 1.2rem; color: #fff;'>${val:,.0f}</span> <span style='color: #45a29e; font-size: 0.8rem;'>Avg/Day</span></div>", unsafe_allow_html=True)
+        with col_less:
+            st.markdown("<h5 style='color: #45a29e; margin-bottom: 5px;'>🔽 OPTIMIZE (Load Less)</h5>", unsafe_allow_html=True)
+            for atm, val in atm_demand.tail(3).items():
+                st.markdown(f"<div class='allocation-box low'><b>Node ID: {atm}</b><br><span style='font-size: 1.2rem; color: #fff;'>${val:,.0f}</span> <span style='color: #45a29e; font-size: 0.8rem;'>Avg/Day</span></div>", unsafe_allow_html=True)
+    else:
+        with st.spinner("🧠 FinTrust Neural Core (Gemini) is analyzing fleet telemetry..."):
+            try:
+                genai.configure(api_key=gemini_key)
+                model = genai.GenerativeModel('gemini-1.5-flash')
+                
+                # Prepare data context for Gemini to read
+                atm_summary = filtered_df.groupby('ATM_ID').agg(
+                    Location=('Location_Type', 'first'),
+                    Avg_Withdrawal=('Total_Withdrawals', 'mean'),
+                    Max_Spike=('Total_Withdrawals', 'max'),
+                    Volatility_Pct=('Daily_Change_Pct', 'std')
+                ).round(2).reset_index()
+                
+                context = atm_summary.to_string(index=False)
+                prompt = f"""
+                You are FinTrust Bank's elite AI Cash Management Assistant. 
+                Analyze the following ATM telemetry data for our active fleet:
+                
+                {context}
+                
+                Provide a highly professional, brief, and actionable recommendation identifying:
+                1. **High Priority (Load More Cash):** Identify 2-3 specific ATMs that require a higher cash load due to high average withdrawals or massive max spikes. Explain why briefly.
+                2. **Optimization (Load Less Cash):** Identify 2-3 specific ATMs that have low demand and can be optimized with lower cash loads to reduce idle money. Explain why.
+                3. **Operational Strategy:** Provide a one-sentence summary strategy for the fleet based on location and volatility.
+                
+                Format the response beautifully using markdown and emojis. Do not write introductory filler text, go straight into the analysis.
+                """
+                
+                response = model.generate_content(prompt)
+                st.markdown(response.text)
+            except Exception as e:
+                st.error(f"❌ AI Core Error: Ensure your API key is valid. Detail: {e}")
+                
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    # --- ORIGINAL FORECASTING GRAPHS ---
     st.markdown("### 🎯 Forecasting Target Selection")
     forecast_target = st.selectbox("Select Target Node for Forecasting Analysis:", ['Entire Fleet Output'] + list(filtered_df['ATM_ID'].unique()))
     
