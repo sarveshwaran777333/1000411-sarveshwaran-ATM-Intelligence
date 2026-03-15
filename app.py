@@ -329,7 +329,7 @@ elif nav_mode == "🔮 Predictive Forecasting":
             for atm, val in atm_demand.tail(3).items():
                 st.markdown(f"<div class='allocation-box low'><b>Node ID: {atm}</b><br><span style='font-size: 1.2rem; color: #fff;'>${val:,.0f}</span> <span style='color: #45a29e; font-size: 0.8rem;'>Avg/Day</span></div>", unsafe_allow_html=True)
     else:
-        with st.spinner("🧠 FinTrust Neural Core (Gemini) is analyzing fleet telemetry..."):
+        with st.spinner("🧠 FinTrust Neural Core is analyzing fleet telemetry..."):
             try:
                 genai.configure(api_key=gemini_key)
                 model = genai.GenerativeModel('gemini-2.5-flash')
