@@ -95,7 +95,8 @@ def inject_premium_ui():
             .kpi-value { font-size: 2.5rem; font-weight: 700; color: #ffffff; font-family: 'Space Grotesk', sans-serif; }
             .kpi-value.neon { background: -webkit-linear-gradient(45deg, #66fcf1, #45a29e); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
             
-            .stTabs [data-baseweb="tab-list"] { gap: 10px; background-color: transparent; }
+            /* --- TAB STYLING --- */
+            .stTabs [data-baseweb="tab-list"] { gap: 10px; background-color: transparent; overflow: visible !important; }
             .stTabs [data-baseweb="tab"] {
                 background-color: rgba(31, 40, 51, 0.6);
                 border-radius: 8px 8px 0 0;
@@ -105,15 +106,73 @@ def inject_premium_ui():
                 padding: 12px 24px;
                 font-family: 'Space Grotesk', sans-serif;
                 transition: all 0.3s ease;
+                position: relative; /* Essential for tooltips */
+                overflow: visible !important;
             }
             .stTabs [aria-selected="true"] {
                 background: linear-gradient(180deg, rgba(102, 252, 241, 0.1) 0%, rgba(31, 40, 51, 0) 100%);
                 border-top: 2px solid #66fcf1;
                 color: #ffffff !important;
             }
+
+            /* --- FLOATING TOOLTIPS FOR TABS --- */
+            /* Clustering Tab Tooltip */
+            .stTabs [data-baseweb="tab"]:nth-child(1)::after {
+                content: "Group ATMs based on demand topography & spatial behaviors";
+                position: absolute;
+                bottom: 100%;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(11, 12, 16, 0.95);
+                color: #66fcf1;
+                padding: 8px 14px;
+                border-radius: 8px;
+                font-size: 0.8rem;
+                font-family: 'Inter', sans-serif;
+                white-space: nowrap;
+                border: 1px solid rgba(102, 252, 241, 0.5);
+                box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+                pointer-events: none;
+                z-index: 9999;
+                opacity: 0;
+                visibility: hidden;
+                transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            }
+            .stTabs [data-baseweb="tab"]:nth-child(1):hover::after {
+                opacity: 1;
+                visibility: visible;
+                bottom: 125%; /* Floats upward */
+            }
+
+            /* Anomaly Tab Tooltip */
+            .stTabs [data-baseweb="tab"]:nth-child(2)::after {
+                content: "Isolate critical spikes, holiday surges, & node anomalies";
+                position: absolute;
+                bottom: 100%;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(11, 12, 16, 0.95);
+                color: #ff4444;
+                padding: 8px 14px;
+                border-radius: 8px;
+                font-size: 0.8rem;
+                font-family: 'Inter', sans-serif;
+                white-space: nowrap;
+                border: 1px solid rgba(255, 68, 68, 0.5);
+                box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+                pointer-events: none;
+                z-index: 9999;
+                opacity: 0;
+                visibility: hidden;
+                transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            }
+            .stTabs [data-baseweb="tab"]:nth-child(2):hover::after {
+                opacity: 1;
+                visibility: visible;
+                bottom: 125%; /* Floats upward */
+            }
+
             .footer-text { color: #45a29e; font-size: 0.85rem; letter-spacing: 1px; }
-            
-            /* Custom styling for Streamlit selectboxes to fit the dark theme */
             div[data-baseweb="select"] > div { background-color: rgba(31, 40, 51, 0.8); border-color: rgba(102, 252, 241, 0.3); color: white; }
         </style>
         """,
@@ -204,12 +263,9 @@ if nav_mode == "🌐 Global Overview":
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
     st.markdown("### 📈 Fleet Throughput Timeline")
     
-    # NEW GRAPH CONTROLS
     ctrl_col1, ctrl_col2 = st.columns([1, 1])
-    with ctrl_col1:
-        timeline_metric = st.selectbox("Select Metric to Plot:", ['Total_Withdrawals', 'Total_Deposits', 'Previous_Day_Cash_Level'], index=0)
-    with ctrl_col2:
-        timeline_grouping = st.radio("Display Mode:", ['Aggregate Fleet View', 'Compare by Location'], horizontal=True)
+    with ctrl_col1: timeline_metric = st.selectbox("Select Metric to Plot:", ['Total_Withdrawals', 'Total_Deposits', 'Previous_Day_Cash_Level'], index=0)
+    with ctrl_col2: timeline_grouping = st.radio("Display Mode:", ['Aggregate Fleet View', 'Compare by Location'], horizontal=True)
     
     if timeline_grouping == 'Aggregate Fleet View':
         timeline_df = filtered_df.groupby('Date')[timeline_metric].sum().reset_index()
@@ -242,10 +298,7 @@ elif nav_mode == "📈 Market Dynamics":
         with col_dyn2:
             st.markdown('<div class="glass-card">', unsafe_allow_html=True)
             st.markdown("### 📊 Topography by Location")
-            
-            # NEW GRAPH CONTROL
             boxplot_metric = st.selectbox("Select Topography Metric:", available_cols, index=0)
-            
             fig_dist = px.box(filtered_df, y=boxplot_metric, color="Location_Type", color_discrete_sequence=['#66fcf1', '#45a29e', '#1f2833', '#c5c6c7'])
             fig_dist.update_layout(template=base_template, margin=dict(t=10, b=10, l=10, r=10), showlegend=False, height=410)
             st.plotly_chart(fig_dist, use_container_width=True)
@@ -302,7 +355,6 @@ elif nav_mode == "⚡ Risk & Diagnostics":
             st.dataframe(critical_events[display_cols], use_container_width=True)
 
 elif nav_mode == "🔮 Predictive Forecasting":
-    # NEW GRAPH CONTROL
     st.markdown("### 🎯 Forecasting Target Selection")
     forecast_target = st.selectbox("Select Target Node for Forecasting Analysis:", ['Entire Fleet Output'] + list(filtered_df['ATM_ID'].unique()))
     
@@ -347,4 +399,3 @@ st.markdown(
     """, 
     unsafe_allow_html=True
 )
-
