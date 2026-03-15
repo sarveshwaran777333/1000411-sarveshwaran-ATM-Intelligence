@@ -6,6 +6,8 @@ Transforming raw ATM telemetry into actionable, AI-driven cash management strate
 # Project Overview
 FinTrust is an interactive enterprise dashboard designed for FinTrust Bank Ltd. to optimize ATM cash replenishment. By logging and analyzing historical transaction data, the app uses machine learning to cluster ATM behaviors, isolate critical demand spikes, and utilizes Generative AI to recommend actionable cash allocation strategies for the fleet.
 
+[Live App](https://1000411-sarveshwaran-atm-intelligence-fpd3yqgbpew9gptmzffdys.streamlit.app/)
+
 # User Focus
 Target Audience: ATM Fleet Managers, Bank Operations Analysts, and Financial Planners.
 
