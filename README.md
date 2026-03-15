@@ -79,13 +79,9 @@ atm_cash_management_dataset.csv: The dataset containing historical ATM telemetry
 .streamlit/secrets.toml: Secure file holding the Gemini API key (not tracked in version control).
 
 # Story board
-story board link
+[story board](https://www.canva.com/design/DAHC9wQJQVQ/JCWtCRmRlGH76DRGkPm2GQ/edit?utm_content=DAHC9wQJQVQ&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton)
 
-screenshots
-
-
-
-
+[screenshots](https://drive.google.com/drive/folders/1-yJ8vJtxeJ8nAJtRBsbQr13MyEbGaAb6?usp=sharing)
 
 # Tested by
 Sister: tested the UI layout, visual hierarchy, and navigation.
