@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components  # Added for tooltip injection
 import pandas as pd
 import numpy as np
 import plotly.express as px
@@ -106,70 +107,13 @@ def inject_premium_ui():
                 padding: 12px 24px;
                 font-family: 'Space Grotesk', sans-serif;
                 transition: all 0.3s ease;
-                position: relative; /* Essential for tooltips */
+                position: relative;
                 overflow: visible !important;
             }
             .stTabs [aria-selected="true"] {
                 background: linear-gradient(180deg, rgba(102, 252, 241, 0.1) 0%, rgba(31, 40, 51, 0) 100%);
                 border-top: 2px solid #66fcf1;
                 color: #ffffff !important;
-            }
-
-            /* --- FLOATING TOOLTIPS FOR TABS --- */
-            /* Clustering Tab Tooltip */
-            .stTabs [data-baseweb="tab"]:nth-child(1)::after {
-                content: "Group ATMs based on demand topography & spatial behaviors";
-                position: absolute;
-                bottom: 100%;
-                left: 50%;
-                transform: translateX(-50%);
-                background: rgba(11, 12, 16, 0.95);
-                color: #66fcf1;
-                padding: 8px 14px;
-                border-radius: 8px;
-                font-size: 0.8rem;
-                font-family: 'Inter', sans-serif;
-                white-space: nowrap;
-                border: 1px solid rgba(102, 252, 241, 0.5);
-                box-shadow: 0 10px 25px rgba(0,0,0,0.8);
-                pointer-events: none;
-                z-index: 9999;
-                opacity: 0;
-                visibility: hidden;
-                transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            }
-            .stTabs [data-baseweb="tab"]:nth-child(1):hover::after {
-                opacity: 1;
-                visibility: visible;
-                bottom: 125%; /* Floats upward */
-            }
-
-            /* Anomaly Tab Tooltip */
-            .stTabs [data-baseweb="tab"]:nth-child(2)::after {
-                content: "Isolate critical spikes, holiday surges, & node anomalies";
-                position: absolute;
-                bottom: 100%;
-                left: 50%;
-                transform: translateX(-50%);
-                background: rgba(11, 12, 16, 0.95);
-                color: #ff4444;
-                padding: 8px 14px;
-                border-radius: 8px;
-                font-size: 0.8rem;
-                font-family: 'Inter', sans-serif;
-                white-space: nowrap;
-                border: 1px solid rgba(255, 68, 68, 0.5);
-                box-shadow: 0 10px 25px rgba(0,0,0,0.8);
-                pointer-events: none;
-                z-index: 9999;
-                opacity: 0;
-                visibility: hidden;
-                transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            }
-            .stTabs [data-baseweb="tab"]:nth-child(2):hover::after {
-                opacity: 1;
-                visibility: visible;
-                bottom: 125%; /* Floats upward */
             }
 
             .footer-text { color: #45a29e; font-size: 0.85rem; letter-spacing: 1px; }
@@ -231,7 +175,7 @@ with st.sidebar:
         selected_locations = st.multiselect("Filter by Location Type", options=unique_locations, default=unique_locations, label_visibility="collapsed")
 
 if not success:
-    st.error("System Failure: 'atm_cash_management_dataset.csv' disconnected.")
+    st.error("System Failure: 'atm_cash_management_dataset.csv' disconnected. Please ensure the dataset is in the same directory.")
     st.stop()
 if not selected_locations:
     st.warning("Awaiting Location Selection...")
@@ -312,7 +256,11 @@ elif nav_mode == "⚡ Risk & Diagnostics":
             scaler = StandardScaler()
             X_scaled = scaler.fit_transform(filtered_df[selected_metrics])
             kmeans_model = KMeans(n_clusters=k_clusters, n_init=10, random_state=42)
+            
+            # Predict clusters and explicitly cast to string for Plotly categorical legend
             filtered_df['Assigned_Cluster'] = kmeans_model.fit_predict(X_scaled)
+            filtered_df['Cluster_Str'] = filtered_df['Assigned_Cluster'].astype(str)
+            
             iso_forest = IsolationForest(contamination=anomaly_threshold, random_state=42)
             filtered_df['Anomaly_Signal'] = iso_forest.fit_predict(X_scaled)
             filtered_df['Diagnostic_Status'] = filtered_df['Anomaly_Signal'].map({1: "Nominal", -1: "Critical Spike"})
@@ -327,14 +275,32 @@ elif nav_mode == "⚡ Risk & Diagnostics":
             time.sleep(0.4)
 
         tab_cluster, tab_anomaly = st.tabs(["🧩 High-Dimensional Clustering", "🚨 Anomaly Isolation"])
+
+        # ---> INJECT TOOLTIPS HERE USING STREAMLIT COMPONENTS <---
+        components.html(
+            """
+            <script>
+            // Use setTimeout to ensure the DOM is fully loaded before attaching attributes
+            setTimeout(function() {
+                const tabs = window.parent.document.querySelectorAll('[data-baseweb="tab"]');
+                if (tabs.length >= 2) {
+                    tabs[0].setAttribute('title', 'Group ATMs based on demand topography & spatial behaviors');
+                    tabs[1].setAttribute('title', 'Isolate critical spikes, holiday surges, & node anomalies');
+                }
+            }, 500);
+            </script>
+            """,
+            height=0, width=0
+        )
+
         with tab_cluster:
             st.markdown('<div class="glass-card">', unsafe_allow_html=True)
             if len(selected_metrics) > 3:
-                fig_cluster = px.scatter_3d(filtered_df, x='PCA_1', y='PCA_2', z='PCA_3', color=filtered_df['Assigned_Cluster'].astype(str), color_discrete_sequence=px.colors.qualitative.Set3, title="PCA Reduced Dimensional Space")
+                fig_cluster = px.scatter_3d(filtered_df, x='PCA_1', y='PCA_2', z='PCA_3', color='Cluster_Str', color_discrete_sequence=px.colors.qualitative.Set3, title="PCA Reduced Dimensional Space")
             elif len(selected_metrics) == 3:
-                fig_cluster = px.scatter_3d(filtered_df, x=selected_metrics[0], y=selected_metrics[1], z=selected_metrics[2], color=filtered_df['Assigned_Cluster'].astype(str), color_discrete_sequence=px.colors.qualitative.Set3)
+                fig_cluster = px.scatter_3d(filtered_df, x=selected_metrics[0], y=selected_metrics[1], z=selected_metrics[2], color='Cluster_Str', color_discrete_sequence=px.colors.qualitative.Set3)
             else:
-                fig_cluster = px.scatter(filtered_df, x=selected_metrics[0], y=selected_metrics[1], color=filtered_df['Assigned_Cluster'].astype(str), color_discrete_sequence=px.colors.qualitative.Set3, symbol="Location_Type")
+                fig_cluster = px.scatter(filtered_df, x=selected_metrics[0], y=selected_metrics[1], color='Cluster_Str', color_discrete_sequence=px.colors.qualitative.Set3, symbol="Location_Type")
             
             fig_cluster.update_traces(marker=dict(size=6, line=dict(width=1, color='DarkSlateGrey')), selector=dict(mode='markers'))
             fig_cluster.update_layout(template=base_template, margin=dict(t=30, b=10, l=10, r=10), height=550, legend_title_text="Behavioral Cluster")
